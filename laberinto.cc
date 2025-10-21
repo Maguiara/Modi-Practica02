@@ -108,8 +108,7 @@ bool Laberinto::Aestrella() {
     nodos_inspeccionados_ = 0;
 
     //MODIFICACION PARA SELECCIONAR NODO ALEATORIO
-    bool escoger_aleatorio = false;
-    bool eliminar_aleatorio = false;
+    bool escoger_aleatorio = true;
 
 
     // Inicializamos e insertamos el nodo inicial en A
@@ -118,16 +117,19 @@ bool Laberinto::Aestrella() {
 
     // mientras A no esté vacío
     while (!abiertos.empty()) {
-      // Seleccionar el nodo con el menor f(n) en A como el nodo actual
-      std::sort(abiertos.begin(), abiertos.end(), [](Nodo* a, Nodo* b) {
-        return a->GetF() < b->GetF();
-      });
-      actual = abiertos[0];
-      if (escoger_aleatorio && abiertos.size() > 1) {
-        int indice_aleatorio = std::rand() % abiertos.size();
-        actual = abiertos[indice_aleatorio];
-        escoger_aleatorio = false;
-        eliminar_aleatorio = true;
+      //MODIFIACION
+      // Seleccionar un nodo aleatorio en la Primera iteración de A, y luego normal
+     if (escoger_aleatorio && abiertos.size() > 1) {
+        int indice = std::rand() % abiertos.size();
+        actual = abiertos[indice];
+        abiertos.erase(abiertos.begin() + indice);
+        escoger_aleatorio = false; // solo la primera iteración
+      } else {
+        std::sort(abiertos.begin(), abiertos.end(), [](Nodo* a, Nodo* b) {
+          return a->GetF() < b->GetF();
+        });
+        actual = abiertos.front();
+        abiertos.erase(abiertos.begin());
       }
       nodos_inspeccionados_++;
       log_inspeccionados_ << "(" << actual->GetPosicion().first << ", " << actual->GetPosicion().second << ") ";
@@ -146,14 +148,9 @@ bool Laberinto::Aestrella() {
         return true;
       }
 
-      // MODIFICACION PARA ELIMINAR NODO ALEATORIO
-      // Si escogi aleatoriamente, eliminino ese nodo
-      if (eliminar_aleatorio) {
-        abiertos.erase(abiertos.begin() + (std::find(abiertos.begin(), abiertos.end(), actual) - abiertos.begin()));
-        eliminar_aleatorio = false;
-      } else {
-        abiertos.erase(abiertos.begin());
-      }
+     
+      
+      // Mover el nodo actual de A a C
       cerrados.push_back(actual);
 
       // Para cada vecino del nodo actual
@@ -197,7 +194,6 @@ bool Laberinto::Aestrella() {
           }
         } 
       }
-      
     }
 
     // Si no se encontró camino, liberar memoria de nodos
@@ -264,13 +260,14 @@ void Laberinto::Practica(const std::string& output_name) {
   // Imprimir el laberinto inicial
   ImprimirDetallesIniciales(output_name);
   while (inicio_ != fin_) {
-    // Ejecutar A* hasta 5 veces por cada paso del agente
-    int intentos = 0;
-    while (intentos < 5) {
+    for (int i = 0; i < 5; ++i) {
+      std::cout << "\n===== Iteración " << i + 1 << " del paso " << numeros_pasos_ + 1 << " =====\n";
       Aestrella();
       ImprimirLaberinto(output_name);
+      ImprimirDetallesLaberinto(output_name);
+      // Borrar el camino para que la siguiente iteración empiece limpia
       BorrarCamino();
-      intentos++;
+      std::cout << "-------------------------------------------\n";
     }
     //Marcar el movimiento del agente
     grid_[inicio_.first][inicio_.second] = 7;
